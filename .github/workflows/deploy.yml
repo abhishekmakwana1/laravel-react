@@ -1,0 +1,112 @@
+name: CD - Continuous Deployment
+
+on:
+  push:
+    branches: [ main, production ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-dev --optimize-autoloader
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      # ============================================
+      # DEPLOYMENT OPTIONS - Uncomment the one you need
+      # ============================================
+
+      # OPTION 1: Deploy via SSH (VPS/Cloud Server)
+      # - name: Deploy to Server via SSH
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USERNAME }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     port: ${{ secrets.SSH_PORT || 22 }}
+      #     script: |
+      #       cd ${{ secrets.PROJECT_PATH }}
+      #       git pull origin main
+      #       composer install --no-dev --optimize-autoloader
+      #       npm ci && npm run build
+      #       php artisan migrate --force
+      #       php artisan config:cache
+      #       php artisan route:cache
+      #       php artisan view:cache
+      #       php artisan queue:restart
+      #       php artisan storage:link
+
+      # OPTION 2: Deploy via FTP (Shared Hosting)
+      # - name: Deploy to Server via FTP
+      #   uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      #   with:
+      #     server: ${{ secrets.FTP_SERVER }}
+      #     username: ${{ secrets.FTP_USERNAME }}
+      #     password: ${{ secrets.FTP_PASSWORD }}
+      #     server-dir: /public_html/
+      #     exclude: |
+      #       **/.git*
+      #       **/.git*/**
+      #       **/node_modules/**
+      #       **/tests/**
+      #       **/.env
+      #       **/storage/logs/**
+
+      # OPTION 3: Deploy to Laravel Forge
+      # - name: Deploy to Laravel Forge
+      #   run: |
+      #     curl -X POST "${{ secrets.FORGE_DEPLOY_WEBHOOK }}"
+
+      # OPTION 4: Deploy to Laravel Vapor
+      # - name: Deploy to Laravel Vapor
+      #   run: |
+      #     composer require laravel/vapor-cli
+      #     vapor deploy production
+
+      # Placeholder deployment step (replace with actual deployment)
+      - name: Deployment Placeholder
+        run: |
+          echo "=========================================="
+          echo "DEPLOYMENT CONFIGURATION NEEDED"
+          echo "=========================================="
+          echo ""
+          echo "Please uncomment and configure one of the deployment options above:"
+          echo "  - SSH deployment (VPS/Cloud)"
+          echo "  - FTP deployment (Shared hosting)"
+          echo "  - Laravel Forge webhook"
+          echo "  - Laravel Vapor"
+          echo ""
+          echo "See CICD_SETUP.md for detailed instructions."
+          echo "=========================================="
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment completed successfully!"
+          else
+            echo "❌ Deployment failed!"
+          fi
