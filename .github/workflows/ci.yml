@@ -75,7 +75,7 @@ jobs:
         run: ./vendor/bin/pint --test
 
       - name: Run ESLint (JavaScript/React)
-        run: npm run lint
+        run: npm run lint -- --max-warnings=100
 
       - name: Check Prettier formatting
         run: npx prettier --check "resources/js/**/*.{js,jsx}"
