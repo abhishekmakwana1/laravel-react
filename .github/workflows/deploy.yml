@@ -2,7 +2,7 @@ name: CD - Continuous Deployment
 
 on:
   push:
-    branches: [ main, production ]
+    branches: [ main, master, production ]
   workflow_dispatch: # Allow manual trigger
 
 jobs:
